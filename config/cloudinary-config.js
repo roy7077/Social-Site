@@ -1,4 +1,5 @@
 const cloudinary = require('cloudinary').v2;
+const {logger}=require('../config/logger-config');
 require('dotenv').config();
 
 // Configure Cloudinary
@@ -13,6 +14,7 @@ const uploadImageToCloudinary = async (file, folder, height, quality) => {
     try {
         // Ensure the 'file' and 'file.tempFilePath' exist
         if (!file || !file.tempFilePath) {
+            logger.error(`No file or invalid file path provided`);
             throw new Error("No file or invalid file path provided.");
         }
 
@@ -30,6 +32,7 @@ const uploadImageToCloudinary = async (file, folder, height, quality) => {
         
         return uploadResponse;
     } catch (error) {
+        logger.error(`Error uploading image to Cloudinary:" ${error.message}`)
         console.error("Error uploading image to Cloudinary:", error.message);
         throw new Error("Error uploading image to Cloudinary.");
     }

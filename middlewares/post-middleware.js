@@ -1,5 +1,6 @@
 const { errorResponse, successResponse } = require('../utils');
 const {AppError} = require('../utils');
+const {logger}=require('../config');
 
 const validatePost = async (req, res, next) => {
     try {
@@ -8,6 +9,7 @@ const validatePost = async (req, res, next) => {
 
         // Validate title and description
         if (!title || !desc) {
+            logger.error(`Title and description are required.`);
             throw new AppError("Title and description are required.", 400);
         }
 
@@ -15,12 +17,15 @@ const validatePost = async (req, res, next) => {
         const thumbnail=req.files.image;
 
         if(!thumbnail)
-        throw new AppError("Image is required.", 400);
-
+        {
+            logger.error(`Image is required`);
+            throw new AppError("Image is required.", 400);
+        }
         // console.log(req.body);
         //  console.log(tags);
         // Validate tags
         if (!tags || !Array.isArray(tags) || tags.length === 0) {
+            logger.error(`Tags are required and should be an array.`);
             throw new AppError("Tags are required and should be an array.", 400);
         }
 
@@ -34,6 +39,7 @@ const validatePost = async (req, res, next) => {
         }
 
         // Unexpected error handling
+        logger.error(`Unexpected Error:, ${error}`);
         console.error("Unexpected Error:", error);
         errorResponse.message="An unexpected error occurred";
         return res.status(500).json(errorResponse);

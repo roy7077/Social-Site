@@ -1,6 +1,8 @@
 const {Post,Tag,PostTagMapping}=require('../models');
 const {errorResponse,successResponse}=require('../utils');
 const {uploadImageToCloudinary}=require('../config');
+const mongoose = require('mongoose');
+const {logger}=require('../config');
 require('dotenv').config();
 
 /**
@@ -51,6 +53,7 @@ const createPost = async (req, res) => {
 
     res.status(201).json(successResponse);
   } catch (error) {
+    logger.error(`Error creating post:, ${error.message}`)
     console.error("Error creating post:", error.message);
     errorResponse.message="Internal server error",
     errorResponse.error=error.message;
@@ -58,6 +61,91 @@ const createPost = async (req, res) => {
   }
 };
 
+
+
+// get all post on different filtering
+const getAllPosts = async (req, res) => {
+  try {
+      const {
+          page = 1, // Default page number
+          limit = 10, // Default posts per page
+          sort = 'createdAt', // Default sorting field
+          order = 'desc', // Default sorting order
+          keyword, // Keyword to filter posts
+          tag // Tag to filter posts
+      } = req.query;
+
+      // Validate query parameters
+      const allowedParams = ['page', 'limit', 'sort', 'order', 'keyword', 'tag'];
+      const extraParams = Object.keys(req.query).filter(
+          (param) => !allowedParams.includes(param)
+      );
+
+      if (extraParams.length > 0) {
+          return res.status(400).json({
+              success: false,
+              message: `Invalid query parameters: ${extraParams.join(', ')}`
+          });
+      }
+
+      // Pagination calculation
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
+      // Filters
+      const filters = {};
+      if (keyword) {
+          filters.$or = [
+              { title: { $regex: keyword, $options: 'i' } },
+              { desc: { $regex: keyword, $options: 'i' } }
+          ];
+      }
+                                       
+      // Fetch posts by tag if provided
+      if (tag) {
+          const tagRecord = await Tag.findOne({ name: tag.toLowerCase() });
+          if (!tagRecord) {
+              return res.status(404).json({
+                  success: false,
+                  message: `No posts found for the tag: ${tag}`
+              });
+          }
+
+          const mappings = await PostTagMapping.find({ tagId: tagRecord._id });
+          const postIds = mappings.map((mapping) => mapping.postId);
+          filters._id = { $in: postIds };
+      }
+
+      // Fetch posts with applied filters, pagination, and sorting
+      const posts = await Post.find(filters)
+          .sort({ [sort]: order === 'asc' ? 1 : -1 })
+          .skip(skip)
+          .limit(parseInt(limit));
+
+      const totalPosts = await Post.countDocuments(filters);
+
+      // Respond with paginated posts
+      return res.status(200).json({
+          success: true,
+          message: "Posts fetched successfully.",
+          data: {
+              totalPosts,
+              totalPages: Math.ceil(totalPosts / limit),
+              currentPage: parseInt(page),
+              posts
+          }
+      });
+  } catch (error) {
+      logger.error(`Error fetching posts:, ${error.message}`);
+      console.error("Error fetching posts:", error.message);
+      return res.status(500).json({
+          success: false,
+          message: "Internal server error",
+          error: error.message
+      });
+  }
+};
+
 module.exports = {
   createPost,
+  getAllPosts
 };

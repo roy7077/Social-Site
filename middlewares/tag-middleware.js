@@ -1,6 +1,6 @@
 const { errorResponse, successResponse } = require('../utils');
 const {AppError} = require('../utils');
-
+const {logger}=require('../config');
 
 const validateTag=async(req,res,next)=>{
     try{
@@ -8,9 +8,9 @@ const validateTag=async(req,res,next)=>{
         const {name}=req.body;
 
         if (!name || typeof name !== 'string' || name.trim() === '') {
+            logger.error("Tag name is required and should be a non-empty string.");
             throw new AppError("Tag name is required and should be a non-empty string.", 400);
         }
-
 
         next();
     }
@@ -22,6 +22,7 @@ const validateTag=async(req,res,next)=>{
         }
 
         // Unexpected error handling
+        logger.error(`Unexpected Error:, ${error}`);
         console.error("Unexpected Error:", error);
         errorResponse.message="An unexpected error occurred";
         return res.status(500).json(errorResponse);

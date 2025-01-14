@@ -1,7 +1,9 @@
 const Tag = require('../models/Tag'); // Assuming Tag is the Mongoose model for tags
 let {errorResponse,successResponse} = require('../utils');
 const {AppError} = require('../utils');
+const {logger}=require('../config');
 
+// create tag
 const createTag = async (req, res) => {
     try {
         // Extract data from request body
@@ -11,6 +13,7 @@ const createTag = async (req, res) => {
         // Check if the tag already exists
         const existingTag = await Tag.findOne({ name: name.trim() });
         if (existingTag) {
+            logger.error(`Tag with the same name already exists`);
             throw new AppError("Tag with the same name already exists.", 409); // Conflict
         }
 
@@ -31,6 +34,8 @@ const createTag = async (req, res) => {
 
             return res.status(error.statusCode).json(errorResponse);
         }
+
+        logger.error(`Unexpected Error:, ${error}`)
 
         // Log unexpected errors for debugging
         console.error("Unexpected Error:", error);

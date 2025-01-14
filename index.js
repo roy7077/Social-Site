@@ -3,6 +3,7 @@ const {dbconnect}=require('./config');
 const cookieParser = require('cookie-parser')
 const fileUpload=require('express-fileupload');
 const bodyParser = require('body-parser')
+const apiRoutes=require('./routes');
 const app=express();
 
 
@@ -22,6 +23,7 @@ app.get('/',(req,res)=>{
     return res.send("Hello");
 })
 
+app.use('/api',apiRoutes);
 
 const PORT = process.env.PORT || 8080
 app.listen(PORT,()=>{
